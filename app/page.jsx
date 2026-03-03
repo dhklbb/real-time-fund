@@ -1515,7 +1515,7 @@ export default function HomePage() {
 
   const storageHelper = useMemo(() => {
     // 仅以下 key 参与云端同步；fundValuationTimeseries 不同步到云端（测试中功能，暂不同步）
-    const keys = new Set(['funds', 'favorites', 'groups', 'collapsedCodes', 'collapsedTrends', 'refreshMs', 'holdings', 'pendingTrades', 'transactions', 'viewMode', 'dcaPlans', 'customSettings']);
+    const keys = new Set(['funds', 'favorites', 'groups', 'collapsedCodes', 'collapsedTrends', 'refreshMs', 'holdings', 'pendingTrades', 'transactions', 'dcaPlans', 'customSettings']);
     const triggerSync = (key, prevValue, nextValue) => {
       if (keys.has(key)) {
         // 标记为脏数据
@@ -1562,7 +1562,7 @@ export default function HomePage() {
 
   useEffect(() => {
     // 仅以下 key 的变更会触发云端同步；fundValuationTimeseries 不在其中
-    const keys = new Set(['funds', 'favorites', 'groups', 'collapsedCodes', 'collapsedTrends', 'refreshMs', 'holdings', 'pendingTrades', 'viewMode', 'dcaPlans', 'customSettings']);
+    const keys = new Set(['funds', 'favorites', 'groups', 'collapsedCodes', 'collapsedTrends', 'refreshMs', 'holdings', 'pendingTrades', 'dcaPlans', 'customSettings']);
     const onStorage = (e) => {
       if (!e.key) return;
       if (e.key === 'localUpdatedAt') {
@@ -2806,7 +2806,6 @@ export default function HomePage() {
         };
       });
 
-    const viewMode = payload.viewMode === 'list' ? 'list' : 'card';
     const customSettings = isPlainObject(payload.customSettings) ? payload.customSettings : {};
 
     return JSON.stringify({
@@ -2820,7 +2819,6 @@ export default function HomePage() {
       pendingTrades,
       transactions,
       dcaPlans,
-      viewMode,
       customSettings
     });
   }
@@ -2843,9 +2841,6 @@ export default function HomePage() {
       }
       if (!keys || keys.has('collapsedTrends')) {
         all.collapsedTrends = JSON.parse(localStorage.getItem('collapsedTrends') || '[]');
-      }
-      if (!keys || keys.has('viewMode')) {
-        all.viewMode = localStorage.getItem('viewMode') === 'list' ? 'list' : 'card';
       }
       if (!keys || keys.has('refreshMs')) {
         all.refreshMs = parseInt(localStorage.getItem('refreshMs') || '30000', 10);
@@ -2938,7 +2933,6 @@ export default function HomePage() {
           pendingTrades: all.pendingTrades,
           transactions: all.transactions,
           dcaPlans: cleanedDcaPlans,
-          viewMode: all.viewMode,
           customSettings: isPlainObject(all.customSettings) ? all.customSettings : {}
         };
       }
@@ -2959,7 +2953,6 @@ export default function HomePage() {
         pendingTrades: [],
         transactions: {},
         dcaPlans: {},
-        viewMode: 'card',
         customSettings: {},
         exportedAt: nowInTz().toISOString()
       };
@@ -2994,10 +2987,6 @@ export default function HomePage() {
       setRefreshMs(nextRefreshMs);
       setTempSeconds(Math.round(nextRefreshMs / 1000));
       storageHelper.setItem('refreshMs', String(nextRefreshMs));
-
-      if (cloudData.viewMode === 'card' || cloudData.viewMode === 'list') {
-        applyViewMode(cloudData.viewMode);
-      }
 
       const nextHoldings = isPlainObject(cloudData.holdings) ? cloudData.holdings : {};
       setHoldings(nextHoldings);
