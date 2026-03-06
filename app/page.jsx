@@ -780,6 +780,7 @@ export default function HomePage() {
             ? (isNumber(f.estGszzl) ? Number(f.estGszzl) : null)
             : (isNumber(f.gszzl) ? Number(f.gszzl) : null));
         const estimateTime = f.noValuation ? (f.jzrq || '-') : (f.gztime || f.time || '-');
+        const hasTodayEstimate = !f.noValuation && isString(f.gztime) && f.gztime.startsWith(todayStr);
 
         const holding = holdings[f.code];
         const profit = getHoldingProfit(f, holding);
@@ -829,6 +830,7 @@ export default function HomePage() {
           estimateChangeValue,
           estimateChangeMuted: f.noValuation,
           estimateTime,
+          hasTodayEstimate,
           holdingAmount,
           holdingAmountValue,
           todayProfit,

@@ -29,6 +29,7 @@ import { ExitIcon, SettingsIcon, StarIcon } from './Icons';
 const MOBILE_NON_FROZEN_COLUMN_IDS = [
   'yesterdayChangePercent',
   'estimateChangePercent',
+  'totalChangePercent',
   'todayProfit',
   'holdingProfit',
   'latestNav',
@@ -39,6 +40,7 @@ const MOBILE_COLUMN_HEADERS = {
   estimateNav: '估算净值',
   yesterdayChangePercent: '昨日涨幅',
   estimateChangePercent: '估值涨幅',
+  totalChangePercent: '综合涨幅',
   todayProfit: '当日收益',
   holdingProfit: '持有收益',
 };
@@ -294,6 +296,7 @@ export default function MobileFundTable({
     estimateNav: 64,
     yesterdayChangePercent: 72,
     estimateChangePercent: 80,
+    totalChangePercent: 80,
     todayProfit: 80,
     holdingProfit: 80,
   };
@@ -524,6 +527,48 @@ export default function MobileFundTable({
         meta: { align: 'right', cellClassName: 'est-change-cell', width: columnWidthMap.estimateChangePercent },
       },
       {
+        accessorKey: 'totalChangePercent',
+        header: '综合涨幅',
+        cell: (info) => {
+          const original = info.row.original || {};
+          const estimateValue = original.estimateChangeValue;
+          const hasTodayEstimate = original.hasTodayEstimate;
+          const holdingProfitPercentStr = original.holdingProfitPercent ?? '';
+          
+          let holdingProfitPercentValue = null;
+          if (holdingProfitPercentStr && holdingProfitPercentStr !== '') {
+            const numStr = holdingProfitPercentStr.replace(/[+%]/g, '');
+            holdingProfitPercentValue = parseFloat(numStr);
+          }
+          
+          const hasEstimate = hasTodayEstimate && estimateValue != null;
+          const hasHolding = holdingProfitPercentValue != null && !isNaN(holdingProfitPercentValue);
+          
+          if (!hasEstimate && !hasHolding) {
+            return (
+              <span className="muted" style={{ display: 'block', width: '100%', fontWeight: 700 }}>
+                <FitText maxFontSize={14} minFontSize={10}>
+                  —
+                </FitText>
+              </span>
+            );
+          }
+          
+          const total = (hasEstimate ? estimateValue : 0) + (hasHolding ? holdingProfitPercentValue : 0);
+          const cls = total > 0 ? 'up' : total < 0 ? 'down' : '';
+          const displayValue = `${total > 0 ? '+' : ''}${total.toFixed(2)}%`;
+          
+          return (
+            <span className={cls} style={{ display: 'block', width: '100%', fontWeight: 700 }}>
+              <FitText maxFontSize={14} minFontSize={10}>
+                {displayValue}
+              </FitText>
+            </span>
+          );
+        },
+        meta: { align: 'right', cellClassName: 'total-change-cell', width: columnWidthMap.totalChangePercent },
+      },
+      {
         accessorKey: 'todayProfit',
         header: '当日收益',
         cell: (info) => {
@@ -689,7 +734,7 @@ export default function MobileFundTable({
 
   const getAlignClass = (columnId) => {
     if (columnId === 'fundName') return '';
-    if (['latestNav', 'estimateNav', 'yesterdayChangePercent', 'estimateChangePercent', 'todayProfit', 'holdingProfit'].includes(columnId)) return 'text-right';
+    if (['latestNav', 'estimateNav', 'yesterdayChangePercent', 'estimateChangePercent', 'totalChangePercent', 'todayProfit', 'holdingProfit'].includes(columnId)) return 'text-right';
     return 'text-right';
   };
 

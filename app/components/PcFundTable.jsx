@@ -30,6 +30,7 @@ import { DragIcon, ExitIcon, SettingsIcon, StarIcon, TrashIcon } from './Icons';
 const NON_FROZEN_COLUMN_IDS = [
   'yesterdayChangePercent',
   'estimateChangePercent',
+  'totalChangePercent',
   'holdingAmount',
   'todayProfit',
   'holdingProfit',
@@ -41,6 +42,7 @@ const COLUMN_HEADERS = {
   estimateNav: '估算净值',
   yesterdayChangePercent: '昨日涨幅',
   estimateChangePercent: '估值涨幅',
+  totalChangePercent: '综合涨幅',
   holdingAmount: '持仓金额',
   todayProfit: '当日收益',
   holdingProfit: '持有收益',
@@ -513,6 +515,49 @@ export default function PcFundTable({
         },
       },
       {
+        accessorKey: 'totalChangePercent',
+        header: '综合涨幅',
+        size: 135,
+        minSize: 100,
+        cell: (info) => {
+          const original = info.row.original || {};
+          const estimateValue = original.estimateChangeValue;
+          const hasTodayEstimate = original.hasTodayEstimate;
+          const holdingProfitPercentStr = original.holdingProfitPercent ?? '';
+          
+          let holdingProfitPercentValue = null;
+          if (holdingProfitPercentStr && holdingProfitPercentStr !== '') {
+            const numStr = holdingProfitPercentStr.replace(/[+%]/g, '');
+            holdingProfitPercentValue = parseFloat(numStr);
+          }
+          
+          const hasEstimate = hasTodayEstimate && estimateValue != null;
+          const hasHolding = holdingProfitPercentValue != null && !isNaN(holdingProfitPercentValue);
+          
+          if (!hasEstimate && !hasHolding) {
+            return (
+              <FitText className="muted" style={{ fontWeight: 700 }} maxFontSize={14} minFontSize={10}>
+                —
+              </FitText>
+            );
+          }
+          
+          const total = (hasEstimate ? estimateValue : 0) + (hasHolding ? holdingProfitPercentValue : 0);
+          const cls = total > 0 ? 'up' : total < 0 ? 'down' : '';
+          const displayValue = `${total > 0 ? '+' : ''}${total.toFixed(2)}%`;
+          
+          return (
+            <FitText className={cls} style={{ fontWeight: 700 }} maxFontSize={14} minFontSize={10}>
+              {displayValue}
+            </FitText>
+          );
+        },
+        meta: {
+          align: 'right',
+          cellClassName: 'total-change-cell',
+        },
+      },
+      {
         accessorKey: 'holdingAmount',
         header: '持仓金额',
         size: 135,
@@ -898,6 +943,7 @@ export default function PcFundTable({
                       'estimateNav',
                       'yesterdayChangePercent',
                       'estimateChangePercent',
+                      'totalChangePercent',
                       'holdingAmount',
                       'todayProfit',
                       'holdingProfit',

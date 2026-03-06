@@ -67,11 +67,12 @@ export default function Announcement() {
             <div style={{ color: 'var(--text)', lineHeight: '1.6', fontSize: '15px', overflowY: 'auto', minHeight: 0, flex: 1, paddingRight: '4px' }}>
               <p>v0.2.1 版本更新内容如下：</p>
               <p>1. 改进拍照识别基金准确度。</p>
-              <p>2. 拍照导入支持识别持仓金额、持仓收益。</p>
+              <p>2. 拍照导入支持选择分组，识别持仓金额、持仓收益。</p>
+              <p>3. 个性化设置新增展示完整基金名称。</p>
+              <p>4. 表格列新增综合涨幅(估值涨幅+持有收益涨幅)。</p>
               以下功能将会在下一个版本上线：
-              <p>1. 列表页查看基金详情。</p>
-              <p>2. 大盘走势数据。</p>
-              <p>3. 关联板块。</p>
+              <p>1. 大盘走势数据。</p>
+              <p>2. 关联板块。</p>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
