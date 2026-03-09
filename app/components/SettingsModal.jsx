@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
 import ConfirmModal from './ConfirmModal';
 import { ResetIcon, SettingsIcon } from './Icons';
 
@@ -22,6 +23,21 @@ export default function SettingsModal({
   const [sliderDragging, setSliderDragging] = useState(false);
   const [resetWidthConfirmOpen, setResetWidthConfirmOpen] = useState(false);
   const [localSeconds, setLocalSeconds] = useState(tempSeconds);
+  const pageWidthTrackRef = useRef(null);
+
+  const clampedWidth = Math.min(2000, Math.max(600, Number(containerWidth) || 1200));
+  const pageWidthPercent = ((clampedWidth - 600) / (2000 - 600)) * 100;
+
+  const updateWidthByClientX = (clientX) => {
+    if (!pageWidthTrackRef.current || !setContainerWidth) return;
+    const rect = pageWidthTrackRef.current.getBoundingClientRect();
+    if (!rect.width) return;
+    const ratio = (clientX - rect.left) / rect.width;
+    const clampedRatio = Math.min(1, Math.max(0, ratio));
+    const rawWidth = 600 + clampedRatio * (2000 - 600);
+    const snapped = Math.round(rawWidth / 10) * 10;
+    setContainerWidth(snapped);
+  };
 
   useEffect(() => {
     if (!sliderDragging) return;
@@ -115,23 +131,32 @@ export default function SettingsModal({
                 )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <input
-                  type="range"
-                  min={600}
-                  max={2000}
-                  step={10}
-                  value={Math.min(2000, Math.max(600, Number(containerWidth) || 1200))}
-                  onChange={(e) => setContainerWidth(Number(e.target.value))}
-                  onPointerDown={() => setSliderDragging(true)}
-                  className="page-width-slider"
-                  style={{
-                    flex: 1,
-                    height: 6,
-                    accentColor: 'var(--primary)',
+                <div
+                  ref={pageWidthTrackRef}
+                  className="group relative"
+                  style={{ flex: 1, height: 14, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                  onPointerDown={(e) => {
+                    setSliderDragging(true);
+                    updateWidthByClientX(e.clientX);
+                    e.currentTarget.setPointerCapture?.(e.pointerId);
                   }}
-                />
+                  onPointerMove={(e) => {
+                    if (!sliderDragging) return;
+                    updateWidthByClientX(e.clientX);
+                  }}
+                >
+                  <Progress value={pageWidthPercent} />
+                  <div
+                    className="pointer-events-none absolute top-1/2 -translate-y-1/2"
+                    style={{ left: `${pageWidthPercent}%`, transform: 'translate(-50%, -50%)' }}
+                  >
+                    <div
+                      className="h-3 w-3 rounded-full bg-primary shadow-md shadow-primary/40"
+                    />
+                  </div>
+                </div>
                 <span className="muted" style={{ fontSize: '0.8rem', minWidth: 48 }}>
-                  {Math.min(2000, Math.max(600, Number(containerWidth) || 1200))}px
+                  {clampedWidth}px
                 </span>
               </div>
             </div>
@@ -175,6 +200,8 @@ export default function SettingsModal({
         <ConfirmModal
           title="重置页面宽度"
           message="是否重置页面宽度为默认值 1200px？"
+          icon={<ResetIcon width="20" height="20" className="shrink-0 text-[var(--primary)]" />}
+          confirmVariant="primary"
           onConfirm={() => {
             onResetContainerWidth();
             setResetWidthConfirmOpen(false);

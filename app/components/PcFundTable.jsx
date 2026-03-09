@@ -34,7 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { CloseIcon, DragIcon, ExitIcon, SettingsIcon, StarIcon, TrashIcon } from './Icons';
+import { CloseIcon, DragIcon, ExitIcon, SettingsIcon, StarIcon, TrashIcon, ResetIcon } from './Icons';
 
 const NON_FROZEN_COLUMN_IDS = [
   'yesterdayChangePercent',
@@ -1117,6 +1117,8 @@ export default function PcFundTable({
         <ConfirmModal
           title="重置列宽"
           message="是否重置表格列宽为默认值？"
+          icon={<ResetIcon width="20" height="20" className="shrink-0 text-[var(--primary)]" />}
+          confirmVariant="primary"
           onConfirm={handleResetSizing}
           onCancel={() => setResetConfirmOpen(false)}
           confirmText="重置"
