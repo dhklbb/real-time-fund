@@ -134,7 +134,29 @@
 
 ---
 
-### 6. viewMode
+### 6. collapsedEarnings
+
+**类型**: `Array<string>`
+**默认值**: `[]`
+**说明**: 存储用户收起的收益图表的基金代码列表
+**云端同步**: 是
+
+**数据结构**:
+```javascript
+[
+  "000001",  // 收起收益图的基金代码
+  "110022",
+  // ...
+]
+```
+
+**使用场景**:
+- 记录用户折叠的收益图表
+- 页面刷新后保持折叠状态
+
+---
+
+### 7. viewMode
 
 **类型**: `string`
 **默认值**: `'card'`
@@ -154,7 +176,7 @@
 
 ---
 
-### 7. refreshMs
+### 8. refreshMs
 
 **类型**: `number` (字符串存储)
 **默认值**: `30000` (30秒)
@@ -174,7 +196,7 @@
 
 ---
 
-### 8. holdings
+### 9. holdings
 
 **类型**: `Object`
 **默认值**: `{}`
@@ -202,7 +224,7 @@
 
 ---
 
-### 9. pendingTrades
+### 10. pendingTrades
 
 **类型**: `Array<Object>`
 **默认值**: `[]`
@@ -224,6 +246,7 @@
     feeValue: number,    // 手续费金额
     date: string,        // 交易日期
     isAfter3pm: boolean, // 是否下午3点后
+    isDca: boolean,      // 是否为定投交易
     timestamp: number    // 时间戳
   }
 ]
@@ -236,7 +259,7 @@
 
 ---
 
-### 10. localUpdatedAt
+### 11. localUpdatedAt
 
 **类型**: `string` (ISO 8601 格式)
 **默认值**: `null`
@@ -254,7 +277,7 @@
 
 ---
 
-### 11. hasClosedAnnouncement_v19
+### 12. hasClosedAnnouncement_v20
 
 **类型**: `string`
 **默认值**: `null`
@@ -269,11 +292,12 @@
 
 **使用场景**:
 - 控制公告弹窗显示
-- 版本号后缀（v19）用于控制公告版本
+- 版本号后缀（v20）用于控制公告版本
+- 组件会自动清理旧版本的公告关闭标记（如 v19）
 
 ---
 
-### 12. customSettings
+### 13. customSettings
 
 **类型**: `Object`
 **默认值**: `{}`
@@ -286,13 +310,15 @@
   localSortRules: [  // 排序规则配置
     {
       id: string,        // 规则唯一标识
-      field: string,      // 排序字段
-      label: string,      // 显示标签
-      direction: 'asc' | 'desc',  // 排序方向
+      label: string,     // 显示标签
+      alias: string,     // 别名（可选）
       enabled: boolean   // 是否启用
     }
   ],
-  pcContainerWidth: number,  // PC端容器宽度（桌面版）
+  localSortDisplayMode: string,  // 排序显示模式 'buttons' | 'dropdown'
+  pcContainerWidth: number,      // PC端容器宽度（桌面版）
+  showMarketIndexPc: boolean,    // PC端是否显示大盘指数
+  showMarketIndexMobile: boolean, // 移动端是否显示大盘指数
   marketIndexSelected: Array<string>,  // 选中的市场指数代码
   // ... 其他自定义设置
 }
@@ -301,12 +327,12 @@
 **使用场景**:
 - 排序规则持久化
 - PC端布局宽度设置
-- 市场指数选择
+- 市场指数选择与显示控制
 - 云端同步所有自定义设置
 
 ---
 
-### 13. localSortBy / localSortOrder
+### 14. localSortBy / localSortOrder
 
 **类型**: `string`
 **默认值**: `'default'` / `'asc'`
@@ -330,7 +356,7 @@
 
 ---
 
-### 14. localSortRules (旧版)
+### 15. localSortRules (旧版)
 
 **类型**: `Array<Object>`
 **默认值**: `[]`
@@ -341,7 +367,7 @@
 
 ---
 
-### 15. currentTab
+### 16. currentTab
 
 **类型**: `string`
 **默认值**: `'all'`
@@ -361,7 +387,7 @@ groupId   // 分组ID，如 'group_xxx'
 
 ---
 
-### 16. theme
+### 17. theme
 
 **类型**: `string`
 **默认值**: `'dark'`
@@ -381,7 +407,7 @@ groupId   // 分组ID，如 'group_xxx'
 
 ---
 
-### 17. fundValuationTimeseries
+### 18. fundValuationTimeseries
 
 **类型**: `Object`
 **默认值**: `{}`
@@ -414,7 +440,7 @@ groupId   // 分组ID，如 'group_xxx'
 
 ---
 
-### 18. transactions
+### 19. transactions
 
 **类型**: `Object`
 **默认值**: `{}`
@@ -426,13 +452,16 @@ groupId   // 分组ID，如 'group_xxx'
 {
   "000001": [  // 按基金代码索引的交易列表
     {
-      id: string,        // 交易唯一标识
+      id: string,            // 交易唯一标识
       type: 'buy' | 'sell',  // 交易类型
-      amount: number,    // 交易金额
-      share: number,     // 交易份额
-      price: number,    // 成交价格
-      date: string,      // 交易日期
-      timestamp: number  // 时间戳
+      amount: number,        // 交易金额
+      share: number,         // 交易份额
+      price: number,         // 成交价格
+      date: string,          // 交易日期
+      isAfter3pm: boolean,   // 是否下午3点后
+      isDca: boolean,        // 是否为定投交易
+      isHistoryOnly: boolean, // 是否仅历史记录（不参与持仓计算）
+      timestamp: number      // 时间戳
     }
   ],
   "110022": [
@@ -448,7 +477,7 @@ groupId   // 分组ID，如 'group_xxx'
 
 ---
 
-### 19. dcaPlans (定投计划)
+### 20. dcaPlans (定投计划)
 
 **类型**: `Object`
 **默认值**: `{}`
@@ -459,11 +488,14 @@ groupId   // 分组ID，如 'group_xxx'
 ```javascript
 {
   "000001": {    // 按基金代码索引
-    amount: number,    // 每次定投金额
-    feeRate: number,   // 手续费率
-    cycle: string,     // 定投周期
-    firstDate: string, // 首次定投日期
-    enabled: boolean   // 是否启用
+    amount: number,     // 每次定投金额
+    feeRate: number,    // 手续费率
+    cycle: string,      // 定投周期 'daily' | 'weekly' | 'biweekly' | 'monthly'
+    firstDate: string,  // 首次定投日期
+    enabled: boolean,   // 是否启用
+    weeklyDay: number,  // 每周定投日（1-7，周一为1）
+    monthlyDay: number, // 每月定投日（1-31）
+    lastDate: string    // 最后定投日期
   },
   "110022": {
     // ...
@@ -478,7 +510,7 @@ groupId   // 分组ID，如 'group_xxx'
 
 ---
 
-### 20. marketIndexSelected
+### 21. marketIndexSelected
 
 **类型**: `Array<string>`
 **默认值**: `[]`
@@ -500,6 +532,36 @@ groupId   // 分组ID，如 'group_xxx'
 
 ---
 
+### 22. fundDailyEarnings
+
+**类型**: `Object`
+**默认值**: `{}`
+**说明**: 存储基金的每日收益数据，用于收益折线图展示
+**云端同步**: 是
+
+**数据结构**:
+```javascript
+{
+  "000001": [  // 按基金代码索引
+    {
+      date: string,      // 日期 "YYYY-MM-DD"
+      earnings: number,  // 当日收益（元）
+      rate: number | null // 当日收益率（百分比数值，如 1.23 表示 +1.23%）
+    }
+  ],
+  "110022": [
+    // ...
+  ]
+}
+```
+
+**使用场景**:
+- 基金详情页收益折线图展示
+- 每日收益历史记录
+- 云端同步
+
+---
+
 ## 数据同步机制
 
 ### 云端同步
@@ -512,16 +574,18 @@ groupId   // 分组ID，如 'group_xxx'
 - groups
 - collapsedCodes
 - collapsedTrends
+- collapsedEarnings
 - refreshMs
 - holdings
 - pendingTrades
 - transactions
 - dcaPlans
 - customSettings
+- fundDailyEarnings
 
 **不参与云端同步的键**:
 - localUpdatedAt（本地专用）
-- hasClosedAnnouncement_v19（本地专用）
+- hasClosedAnnouncement_v20（本地专用）
 - localSortBy / localSortOrder（通过 customSettings 同步）
 - localSortRules（旧版兼容，通过 customSettings 同步）
 - currentTab（本地会话状态）
@@ -546,12 +610,15 @@ groupId   // 分组ID，如 'group_xxx'
   favorites: [],
   groups: [],
   collapsedCodes: [],
+  collapsedTrends: [],
+  collapsedEarnings: [],
   refreshMs: 30000,
   holdings: {},
   pendingTrades: [],
   transactions: {},
   dcaPlans: {},
   customSettings: {},
+  fundDailyEarnings: {},
   exportedAt: '2024-01-15T10:30:00.000Z'
 }
 ```
@@ -631,6 +698,7 @@ const storageHelper = {
 4. **数据格式**: 复杂数据必须使用 JSON.stringify/JSON.parse 进行序列化/反序列化
 5. **版本控制**: 公告等配置使用版本号后缀，便于控制不同版本的显示
 6. **fundValuationTimeseries**: 该数据不同步到云端，因为数据量较大且属于临时性数据
+7. **公告版本清理**: Announcement 组件会自动清理旧版本的公告关闭标记
 
 ---
 
@@ -643,10 +711,12 @@ const storageHelper = {
 - `app/components/MarketIndexAccordion.jsx` - 市场指数组件
 - `app/lib/supabase.js` - Supabase 客户端配置
 - `app/lib/valuationTimeseries.js` - 估值分时数据管理
+- `app/lib/dailyEarnings.js` - 每日收益数据管理
 
 ---
 
 ## 更新日志
 
+- **2026-04-05**: 全面更新文档，新增 `collapsedEarnings`、`fundDailyEarnings` 键；更新 `customSettings`（新增 `localSortDisplayMode`、`showMarketIndexPc`、`showMarketIndexMobile`）；更新 `dcaPlans`（新增 `weeklyDay`、`monthlyDay`、`lastDate`）；更新 `transactions`（新增 `isDca`、`isHistoryOnly`）；更新 `pendingTrades`（新增 `isDca`）；更新公告版本号至 v20；更新云端同步键列表
 - **2026-03-18**: 全面更新文档，补充 transactions、dcaPlans、fundValuationTimeseries、customSettings 等键的详细说明，修正云端同步键列表
 - **2026-02-19**: 初始文档创建
