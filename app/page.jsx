@@ -110,6 +110,7 @@ const formatDate = (input) => toTz(input).format('YYYY-MM-DD');
 
 /** 定投计划分桶：全局与其它自定义分组 */
 const DCA_SCOPE_GLOBAL = '__global__';
+const hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
 
 function cloneHoldingDeep(src) {
   if (!isPlainObject(src)) return null;
@@ -4543,35 +4544,58 @@ export default function HomePage() {
       setGroupHoldings(nextGroupHoldings);
       storageHelper.setItem('groupHoldings', JSON.stringify(nextGroupHoldings));
 
-      const nextPendingTrades = Array.isArray(cloudData.pendingTrades)
-        ? cloudData.pendingTrades.filter((trade) => {
-            if (!trade || !nextFundCodes.has(trade.fundCode)) return false;
-            if (trade.groupId && !cloudGroupIds.has(trade.groupId)) return false;
-            return true;
-          })
-        : [];
-      setPendingTrades(nextPendingTrades);
-      storageHelper.setItem('pendingTrades', JSON.stringify(nextPendingTrades));
+      // 兼容：旧版本云端 data 可能不包含 pendingTrades / transactions / dcaPlans 字段。
+      // 若字段缺失，必须保留本地，避免“更新后云端覆盖导致记录清空”。
+      if (hasOwn(cloudData, 'pendingTrades')) {
+        const nextPendingTrades = Array.isArray(cloudData.pendingTrades)
+          ? cloudData.pendingTrades.filter((trade) => {
+              if (!trade || !nextFundCodes.has(trade.fundCode)) return false;
+              if (trade.groupId && !cloudGroupIds.has(trade.groupId)) return false;
+              return true;
+            })
+          : [];
+        setPendingTrades(nextPendingTrades);
+        storageHelper.setItem('pendingTrades', JSON.stringify(nextPendingTrades));
+      } else {
+        try {
+          const localPending = JSON.parse(localStorage.getItem('pendingTrades') || '[]');
+          setPendingTrades(Array.isArray(localPending) ? localPending : []);
+        } catch { }
+      }
 
-      const nextTransactions = isPlainObject(cloudData.transactions) ? cloudData.transactions : {};
-      setTransactions(nextTransactions);
-      storageHelper.setItem('transactions', JSON.stringify(nextTransactions));
+      if (hasOwn(cloudData, 'transactions')) {
+        const nextTransactions = isPlainObject(cloudData.transactions) ? cloudData.transactions : {};
+        setTransactions(nextTransactions);
+        storageHelper.setItem('transactions', JSON.stringify(nextTransactions));
+      } else {
+        try {
+          const localTx = JSON.parse(localStorage.getItem('transactions') || '{}');
+          setTransactions(isPlainObject(localTx) ? localTx : {});
+        } catch { }
+      }
 
-      const cloudDcaScoped = migrateDcaPlansToScoped(isPlainObject(cloudData.dcaPlans) ? cloudData.dcaPlans : {});
-      const nextDcaPlans = {};
-      Object.entries(cloudDcaScoped).forEach(([scopeKey, bucket]) => {
-        if (scopeKey !== DCA_SCOPE_GLOBAL && !cloudGroupIds.has(scopeKey)) return;
-        if (!isPlainObject(bucket)) return;
-        const inner = {};
-        Object.entries(bucket).forEach(([code, plan]) => {
-          if (!nextFundCodes.has(code) || !isPlainObject(plan)) return;
-          inner[code] = plan;
+      if (hasOwn(cloudData, 'dcaPlans')) {
+        const cloudDcaScoped = migrateDcaPlansToScoped(isPlainObject(cloudData.dcaPlans) ? cloudData.dcaPlans : {});
+        const nextDcaPlans = {};
+        Object.entries(cloudDcaScoped).forEach(([scopeKey, bucket]) => {
+          if (scopeKey !== DCA_SCOPE_GLOBAL && !cloudGroupIds.has(scopeKey)) return;
+          if (!isPlainObject(bucket)) return;
+          const inner = {};
+          Object.entries(bucket).forEach(([code, plan]) => {
+            if (!nextFundCodes.has(code) || !isPlainObject(plan)) return;
+            inner[code] = plan;
+          });
+          if (Object.keys(inner).length) nextDcaPlans[scopeKey] = inner;
         });
-        if (Object.keys(inner).length) nextDcaPlans[scopeKey] = inner;
-      });
-      if (!nextDcaPlans[DCA_SCOPE_GLOBAL]) nextDcaPlans[DCA_SCOPE_GLOBAL] = {};
-      setDcaPlans(nextDcaPlans);
-      storageHelper.setItem('dcaPlans', JSON.stringify(nextDcaPlans));
+        if (!nextDcaPlans[DCA_SCOPE_GLOBAL]) nextDcaPlans[DCA_SCOPE_GLOBAL] = {};
+        setDcaPlans(nextDcaPlans);
+        storageHelper.setItem('dcaPlans', JSON.stringify(nextDcaPlans));
+      } else {
+        try {
+          const localDca = JSON.parse(localStorage.getItem('dcaPlans') || '{}');
+          setDcaPlans(migrateDcaPlansToScoped(isPlainObject(localDca) ? localDca : {}));
+        } catch { }
+      }
 
       const cloudDaily = normalizeFundDailyEarningsScoped(cloudData.fundDailyEarnings);
       const nextFundDailyEarnings = Object.entries(cloudDaily).reduce((acc, [scopeKey, bucket]) => {
