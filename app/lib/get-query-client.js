@@ -24,6 +24,12 @@ export function getQueryClient() {
   }
   if (!browserQueryClient) {
     browserQueryClient = createQueryClient();
+    /** 供 Chrome 扩展等内容脚本读取，与 React 树共用同一缓存 */
+    try {
+      window.__TANSTACK_QUERY_CLIENT__ = browserQueryClient;
+    } catch {
+      // 忽略极端环境（如不可写 window）
+    }
   }
   return browserQueryClient;
 }
