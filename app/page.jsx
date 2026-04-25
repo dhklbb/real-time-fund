@@ -138,7 +138,10 @@ export default function HomePage() {
     collapsedTrends, setCollapsedTrends,
     collapsedEarnings, setCollapsedEarnings,
     refreshMs, setRefreshMs,
-    initCollapsed, initRefreshMs
+    holdings, setHoldings,
+    groupHoldings, setGroupHoldings,
+    initCollapsed, initRefreshMs,
+    initHoldings, initGroupHoldings
   } = useStorageStore();
   /** 基金标签（独立 localStorage 键 `tags`）：{ id, name, theme, fundCodes: string[] }[] */
   const [fundTagRecords, setFundTagRecords] = useState([]);
@@ -498,9 +501,6 @@ export default function HomePage() {
     name: '',
     targetGroupId: null,
   });
-  const [holdings, setHoldings] = useState({}); // { [code]: { share: number, cost: number } }
-  /** 自定义分组独立持仓：groupId -> code -> holding */
-  const [groupHoldings, setGroupHoldings] = useState({});
   const [pendingTrades, setPendingTrades] = useState([]); // [{ id, fundCode, share, date, ... }]
   const [transactions, setTransactions] = useState({}); // { [code]: [{ id, type, amount, share, price, date, timestamp }] }
   const [dcaPlans, setDcaPlans] = useState({}); // scoped: { __global__|groupId: { [code]: plan } }
@@ -509,8 +509,8 @@ export default function HomePage() {
   const [percentModes, setPercentModes] = useState({}); // { [code]: boolean }
   const [todayPercentModes, setTodayPercentModes] = useState({}); // { [code]: boolean }
 
-  const holdingsRef = useRef(holdings);
-  const groupHoldingsRef = useRef(groupHoldings);
+  const holdingsRef = useRef(null);
+  const groupHoldingsRef = useRef(null);
   const pendingTradesRef = useRef(pendingTrades);
 
   useEffect(() => {
@@ -1630,7 +1630,6 @@ export default function HomePage() {
         } else {
           next[code] = data;
         }
-        storageHelper.setItem('holdings', JSON.stringify(next));
         return next;
       });
     } else {
@@ -1643,7 +1642,6 @@ export default function HomePage() {
           bucket[code] = data;
         }
         next[gid] = bucket;
-        storageHelper.setItem('groupHoldings', JSON.stringify(next));
         return next;
       });
     }
@@ -1679,7 +1677,6 @@ export default function HomePage() {
         setHoldings((prev) => {
           const next = { ...prev };
           delete next[code];
-          storageHelper.setItem('holdings', JSON.stringify(next));
           return next;
         });
       } else {
@@ -1690,7 +1687,6 @@ export default function HomePage() {
             delete bucket[code];
             next[gid] = bucket;
           }
-          storageHelper.setItem('groupHoldings', JSON.stringify(next));
           return next;
         });
       }
@@ -1830,9 +1826,7 @@ export default function HomePage() {
 
     if (stateChanged) {
       setHoldings(tempHoldings);
-      storageHelper.setItem('holdings', JSON.stringify(tempHoldings));
       setGroupHoldings(tempGroupHoldings);
-      storageHelper.setItem('groupHoldings', JSON.stringify(tempGroupHoldings));
 
       setPendingTrades(prev => {
           const next = prev.filter(t => !processedIds.has(t.id));
@@ -2484,7 +2478,6 @@ export default function HomePage() {
         if (Object.keys(newHoldings).length > 0) {
           setHoldings(prev => {
             const next = { ...prev, ...newHoldings };
-            storageHelper.setItem('holdings', JSON.stringify(next));
             return next;
           });
         }
@@ -3045,7 +3038,6 @@ export default function HomePage() {
       if (!prev[id]) return prev;
       const nextGh = { ...prev };
       delete nextGh[id];
-      storageHelper.setItem('groupHoldings', JSON.stringify(nextGh));
       return nextGh;
     });
     setDcaPlans((prev) => {
@@ -3088,7 +3080,6 @@ export default function HomePage() {
             ghChanged = true;
           }
         });
-        if (ghChanged) storageHelper.setItem('groupHoldings', JSON.stringify(nextGh));
         return ghChanged ? nextGh : prev;
       });
       setDcaPlans((prev) => {
@@ -3192,7 +3183,6 @@ export default function HomePage() {
         if (!changed) return prev;
         const nextGh = { ...(prev || {}) };
         nextGh[gid] = nextBucket;
-        storageHelper.setItem('groupHoldings', JSON.stringify(nextGh));
         return nextGh;
       });
 
@@ -3278,7 +3268,6 @@ export default function HomePage() {
       const bucket = { ...next[groupId] };
       delete bucket[code];
       next[groupId] = bucket;
-      storageHelper.setItem('groupHoldings', JSON.stringify(next));
       return next;
     });
 
@@ -3348,7 +3337,6 @@ export default function HomePage() {
       }
       if (!changed) return prev;
       const next = { ...prev, [groupId]: bucket };
-      storageHelper.setItem('groupHoldings', JSON.stringify(next));
       return next;
     });
 
@@ -3499,6 +3487,8 @@ export default function HomePage() {
       initFavorites();
       initCollapsed();
       initRefreshMs();
+      initHoldings();
+      initGroupHoldings();
       try {        // 已登录用户：不在此处调用 refreshAll，等 fetchCloudConfig 完成后由 applyCloudConfig 统一刷新
         let shouldRefreshFromLocal = true;
         if (isSupabaseConfigured) {
@@ -3585,22 +3575,14 @@ export default function HomePage() {
         setCurrentTab('all');
       }
       // 加载持仓数据
-      const savedHoldings = storageStore.getItem('holdings', {});
-      if (isPlainObject(savedHoldings)) {
-        setHoldings(savedHoldings);
-      }
-      const savedGroupHoldings = storageStore.getItem('groupHoldings', {});
-      let initialGH = isPlainObject(savedGroupHoldings) ? savedGroupHoldings : {};
       const seedGh = seedGroupHoldingsFromGlobal(
-        isPlainObject(savedHoldings) ? savedHoldings : {},
+        holdings,
         Array.isArray(groups) ? groups : [],
-        initialGH
+        groupHoldings
       );
       if (seedGh.changed) {
-        initialGH = seedGh.next;
-        storageHelper.setItem('groupHoldings', JSON.stringify(initialGH));
+        setGroupHoldings(seedGh.next);
       }
-      setGroupHoldings(initialGH);
       const savedTransactions = storageStore.getItem('transactions', {});
       if (isPlainObject(savedTransactions)) {
         setTransactions(savedTransactions);
@@ -3640,7 +3622,6 @@ export default function HomePage() {
     setGroupHoldings((prev) => {
       const { next, changed } = seedGroupHoldingsFromGlobal(holdings, groups, prev);
       if (!changed) return prev;
-      storageHelper.setItem('groupHoldings', JSON.stringify(next));
       return next;
     });
   }, [holdings, groups]);
@@ -4514,7 +4495,6 @@ export default function HomePage() {
       // all/fav -> group：从 global holdings 移出（目标持仓写入 groupHoldings）
       if (!fromGid && toGid) {
         for (const code of list) delete next[code];
-        storageHelper.setItem('holdings', JSON.stringify(next));
         return next;
       }
 
@@ -4531,7 +4511,6 @@ export default function HomePage() {
           }
         }
         if (!changed) return prev;
-        storageHelper.setItem('holdings', JSON.stringify(next));
         return next;
       }
 
@@ -4568,7 +4547,6 @@ export default function HomePage() {
         }
       }
 
-      storageHelper.setItem('groupHoldings', JSON.stringify(next));
       return next;
     });
 
@@ -4742,7 +4720,6 @@ export default function HomePage() {
       if (!prev[removeCode]) return prev;
       const next = { ...prev };
       delete next[removeCode];
-      storageHelper.setItem('holdings', JSON.stringify(next));
       return next;
     });
 
@@ -4757,7 +4734,6 @@ export default function HomePage() {
         }
         next[gid] = bucket;
       }
-      if (changed) storageHelper.setItem('groupHoldings', JSON.stringify(next));
       return changed ? next : prev;
     });
 
@@ -4929,7 +4905,6 @@ export default function HomePage() {
           delete next[c];
         }
       }
-      if (changed) storageHelper.setItem('holdings', JSON.stringify(next));
       return changed ? next : prev;
     });
 
@@ -4946,7 +4921,6 @@ export default function HomePage() {
         }
         next[gid] = bucket;
       }
-      if (changed) storageHelper.setItem('groupHoldings', JSON.stringify(next));
       return changed ? next : prev;
     });
 
@@ -5762,7 +5736,6 @@ export default function HomePage() {
 
       const nextHoldings = isPlainObject(cloudData.holdings) ? cloudData.holdings : {};
       setHoldings(nextHoldings);
-      storageHelper.setItem('holdings', JSON.stringify(nextHoldings));
 
       const cloudGroupIds = new Set(nextGroups.map((g) => g?.id).filter(Boolean));
 
@@ -5772,7 +5745,6 @@ export default function HomePage() {
         nextGroupHoldings = seedAfterCloud.next;
       }
       setGroupHoldings(nextGroupHoldings);
-      storageHelper.setItem('groupHoldings', JSON.stringify(nextGroupHoldings));
 
       // 兼容：旧版本云端 data 可能不包含 pendingTrades / transactions / dcaPlans 字段。
       // 若字段缺失，必须保留本地，避免“更新后云端覆盖导致记录清空”。
@@ -6201,7 +6173,6 @@ export default function HomePage() {
         if (isPlainObject(data.holdings)) {
           const mergedHoldings = { ...storageStore.getItem('holdings', {}), ...data.holdings };
           setHoldings(mergedHoldings);
-          storageHelper.setItem('holdings', JSON.stringify(mergedHoldings));
         }
 
         if (isPlainObject(data.groupHoldings)) {
@@ -6211,7 +6182,6 @@ export default function HomePage() {
             mergedGH[gid] = { ...(mergedGH[gid] || {}), ...bucket };
           });
           setGroupHoldings(mergedGH);
-          storageHelper.setItem('groupHoldings', JSON.stringify(mergedGH));
         }
 
         if (isPlainObject(data.transactions)) {
