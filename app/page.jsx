@@ -259,7 +259,7 @@ export default function HomePage() {
       // 2）兼容旧版独立 localSortRules 字段
       let rulesFromSettings = null;
       try {
-        const parsed = customSettings;
+        const parsed = storageStore.getItem('customSettings', customSettings || {});
         if (parsed) {
           if (Array.isArray(parsed.localSortRules)) {
             rulesFromSettings = parsed.localSortRules;
