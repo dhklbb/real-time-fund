@@ -201,7 +201,7 @@ export default function HomePage() {
     if (typeof window === 'undefined') return;
     try {
       const parsed = customSettings;
-      if (!parsed) return;
+      if (!parsed || typeof parsed !== 'object') return;
       const w = parsed?.pcContainerWidth;
       const num = Number(w);
       if (Number.isFinite(num)) {
@@ -212,7 +212,7 @@ export default function HomePage() {
       if (typeof parsed?.showGroupFundSearchPc === 'boolean') setShowGroupFundSearchPc(parsed.showGroupFundSearchPc);
       if (typeof parsed?.showGroupFundSearchMobile === 'boolean') setShowGroupFundSearchMobile(parsed.showGroupFundSearchMobile);
     } catch { }
-  }, []);
+  }, [customSettings]);
 
   // 全局刷新状态
   const [refreshing, setRefreshing] = useState(false);
